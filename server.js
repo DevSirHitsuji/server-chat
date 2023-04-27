@@ -31,7 +31,6 @@ server.on("connection", (socket) => {
     socket.on('message', (message) => {
         let content = message.toString();
         let Message = JSON.parse(content);
-        console.log(Message)
 
         if (Message.type == "username") {
             exist = false;
@@ -54,7 +53,7 @@ server.on("connection", (socket) => {
                 })
 
                 messages.forEach((sms) => {
-                    socket.send(JSON.stringify({"type" : "message", "content" : sms?.content, "username" : sms?.username, "date": sms?.date}));
+                    socket.send(JSON.stringify({"type" : "message", "content" : sms.content, "username" : sms.username, "date": sms.date}));
                 })                
             
                 sockets.forEach((user) => {
@@ -70,6 +69,8 @@ server.on("connection", (socket) => {
         }
 
         if (Message.type == "message") {
+            messages.push(Message);
+
             sockets.forEach((user) => {
                 user.send(JSON.stringify({"type" : "message", "content" : Message.content, "username": Message.username, "date": Message.date}));
             })
