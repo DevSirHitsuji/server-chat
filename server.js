@@ -52,16 +52,16 @@ server.on("connection", (socket) => {
                 sockets.forEach((user) => {
                     users.push(user.username);
                 })
+
+                messages.forEach((sms) => {
+                    socket.send(JSON.stringify({"type" : "message", "content" : sms?.content, "username" : sms?.username, "date": sms?.date}));
+                })                
             
                 sockets.forEach((user) => {
                     user.send(JSON.stringify({"type": "users", "content" : users}));
                     if (user !== socket) {    
                         user.send(JSON.stringify({"type": "online", "content" : Message.content}))                    
                     }
-                })
-                
-                messages.forEach((message) => {
-                    socket.send(JSON.stringify({"type" : "message", "content" : message.content, "username" : message.username, "date": message.date}));
                 })
 
                 return socket.send(JSON.stringify({"type" : "sucess", "content" : Message.content}));
