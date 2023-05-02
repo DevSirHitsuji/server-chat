@@ -26,6 +26,9 @@ server.on("connection", (socket) => {
             users.push(user.username);
         })
 
+        // remove from geral
+        rooms[0].users.delete(socket);
+
         sockets?.forEach((user) => {
             if (user !== socket && user.username !== undefined) {
                 console.log(user.username + " disconected")
@@ -41,8 +44,6 @@ server.on("connection", (socket) => {
     socket.on('message', async (message) => {
         let content = message.toString();
         let Message = await JSON.parse(content);
-
-        console.log(Message)
 
         if (Message.type == "username") {
             exist = false;
@@ -69,8 +70,11 @@ server.on("connection", (socket) => {
                 let myRooms = [];
                 rooms.forEach((room) => {
                     room.users.forEach((user) => {
-                        if (user == socket) {
-                            myRooms.push(room);
+                        if (user.username == socket.username) {
+                            myRooms.push({
+                                "room" : room, 
+                                "lastMessage" : room.messages[room.messages.length - 1]
+                            })
                         }
                     })
                 })
@@ -88,13 +92,30 @@ server.on("connection", (socket) => {
         }
 
         if (Message.type == "message") {
-            rooms.forEach((room) => {
+            rooms.map((room, index) => {
                 if (room.id == Message.roomId) {
+
+                    rooms.splice(index, 1)
+                    rooms.unshift(room);
+                    
                     room.messages.push(Message)
+                    room.users.forEach((user) => {
+                        user.send(JSON.stringify({"type" : "message", "content" : Message.content, "username": Message.username, "date": Message.date}));
+                    })
+
+                    sockets.forEach((SOCKET) => {
+                        let myRooms = [];
+                        rooms.forEach((room) => {
+                            room.users.forEach((user) => {
+                                if (user.username == SOCKET.username) {
+                                    myRooms.push({"room" : room, "lastMessage" : room.messages[room.messages.length - 1]});
+                                }
+                            })
+                        })
+                        SOCKET.send(JSON.stringify({"type" : "rooms", "content" : myRooms}));
+                    })
+
                 }
-                room.users.forEach((user) => {
-                    user.send(JSON.stringify({"type" : "message", "content" : Message.content, "username": Message.username, "date": Message.date}));
-                })
             })
         }
 
@@ -105,6 +126,39 @@ server.on("connection", (socket) => {
                 }
             })
         }
+
+        if (Message.type == "createRoom") {
+
+            let usersRoom = new Set();
+            sockets.forEach((user) => {
+                Message.users.forEach((member) => {
+                    if (user.username == member) {
+                        usersRoom.add(user);
+                    }
+                })
+            })
+
+            rooms.push({
+                "id" : shortid(),
+                "name" : Message.name,
+                "users" : usersRoom,
+                "messages" : []
+            })
+
+            sockets.forEach((SOCKET) => {
+                let myRooms = [];
+                rooms.forEach((room) => {
+                    room.users.forEach((user) => {
+                        if (user.username == SOCKET.username) {
+                            myRooms.push(room);
+                        }
+                    })
+                })
+                SOCKET.send(JSON.stringify({"type" : "rooms", "content" : myRooms}));
+            })
+    
+        }
+
 
         if (Message.type == "logout") {
             sockets.forEach((user) => {
