@@ -150,7 +150,7 @@ server.on("connection", (socket) => {
                 rooms.forEach((room) => {
                     room.users.forEach((user) => {
                         if (user.username == SOCKET.username) {
-                            myRooms.push(room);
+                            myRooms.push({"room" : room, "lastMessage" : room.messages[room.messages.length - 1]});
                         }
                     })
                 })
