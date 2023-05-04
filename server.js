@@ -44,7 +44,7 @@ server.on("connection", (socket) => {
     socket.on('message', async (message) => {
         let content = message.toString();
         let Message = await JSON.parse(content);
-
+        
         if (Message.type == "username") {
             exist = false;
             sockets?.forEach((user) => {
@@ -60,8 +60,13 @@ server.on("connection", (socket) => {
                 socket.username = Message.content;
 
                 sockets.add(socket);
-                rooms[0].users.add(socket);
 
+                rooms.forEach((room) => {
+                    if (room.name == "geral") {
+                       room.users.add(socket); 
+                    } 
+                })
+                    
                 users = [];
                 sockets.forEach((user) => {
                     users.push(user.username);
@@ -94,13 +99,12 @@ server.on("connection", (socket) => {
         if (Message.type == "message") {
             rooms.map((room, index) => {
                 if (room.id == Message.roomId) {
-
+                   
                     rooms.splice(index, 1)
-                    rooms.unshift(room);
-                    
+                    rooms.unshift(room);              
                     room.messages.push(Message)
                     room.users.forEach((user) => {
-                        user.send(JSON.stringify({"type" : "message", "content" : Message.content, "username": Message.username, "date": Message.date}));
+                        user.send(JSON.stringify({"type" : "message", "roomId" : Message.roomId,  "content" : Message.content, "username": Message.username, "date": Message.date}));
                     })
 
                     sockets.forEach((SOCKET) => {
@@ -116,7 +120,7 @@ server.on("connection", (socket) => {
                     })
 
                 }
-            })
+            }) 
         }
 
         if (Message.type == "getRoom") {
